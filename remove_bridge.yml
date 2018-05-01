@@ -1,0 +1,26 @@
+---
+
+- hosts: localhost
+  gather_facts: no
+  become: true
+  vars:
+    var1: "{{tenant_name}}"
+  tasks:
+
+  - name: read the vars_file
+    include_vars:
+      file: "{{playbook_dir}}/{{var1}}_device_inventory.yml"
+      name: names
+
+
+  - name: Remove all VM containers from Bridge0
+    command: docker network disconnect bridge "{{ item }}"
+    with_items:
+      - "{{ names.VMcontainer_names}}"
+    ignore_errors: yes
+
+  - name: Remove all FW containers from Bridge0
+    command: docker network disconnect bridge "{{ item }}"
+    with_items:
+      - "{{ names.FWcontainer_names}}"
+    ignore_errors: yes

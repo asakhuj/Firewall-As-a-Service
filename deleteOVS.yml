@@ -1,0 +1,22 @@
+- hosts: localhost
+  gather_facts: no
+  become: true
+  vars:
+    var1: "{{tenant_name}}"
+  tasks:
+
+  - name: read the vars_file
+    include_vars:
+      file: "{{playbook_dir}}/{{var1}}_device_inventory.yml"
+      name: names
+
+  - name: Delete OvS bridges
+    openvswitch_bridge:
+       bridge: '{{ item }}'
+       state: absent
+    with_items:
+      - "{{ names.OVSbridge_names}}"
+
+#  - name: create namespace
+#    command: sudo ip netns add "{{ name1 }}"
+

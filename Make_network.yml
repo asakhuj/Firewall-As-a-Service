@@ -1,0 +1,51 @@
+- hosts: localhost
+  gather_facts: no
+  become: true
+  vars:
+    var1: "{{tenant_name}}"
+  tasks:
+  
+  - name: read the vars_file
+    include_vars:
+      file: "{{playbook_dir}}/{{var1}}_device_inventory.yml"
+      name: names
+
+  - name: Create an OvS bridge
+    openvswitch_bridge:
+       bridge: '{{ item }}'
+       state: present
+    with_items:
+      - "{{ names.OVSbridge_names}}"
+
+  - name: Create namespaces
+    command: sudo ip netns add "{{ item }}"
+    with_items:
+      - "{{ names.Namespace_names }}"
+
+  - name: spwan the Firewalls
+    docker_container:
+      image: firewall_image
+      name: "{{item}}"
+      state: started
+      hostname: "{{item}}"
+      privileged: yes
+      interactive: yes
+      tty: yes
+    with_items:
+      - "{{ names.FWcontainer_names }}"
+
+  - name: spwan the Virtual Machines
+    docker_container:
+      image: vm_image
+      name: "{{item}}"
+      state: started
+      hostname: "{{item}}"
+      privileged: yes
+      interactive: yes
+      tty: yes
+    with_items:
+      - "{{ names.VMcontainer_names }}"
+
+  - name: Remove containers from bridge0
+    command: sudo ansible-playbook remove_bridge.yml --extra-vars "tenant_name={{var1}}"
+
